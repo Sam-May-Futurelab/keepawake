@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Daily Planner 2025</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .container {
+            text-align: center;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 30px;
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+        
+        h1 {
+            margin-bottom: 20px;
+            font-size: 2.5em;
+        }
+        
+        .status {
+            font-size: 1.2em;
+            margin: 20px 0;
+            padding: 10px;
+            border-radius: 5px;
+            background: rgba(255, 255, 255, 0.2);
+        }
+        
+        .active {
+            background: rgba(76, 175, 80, 0.3);
+        }
+        
+        .inactive {
+            background: rgba(244, 67, 54, 0.3);
+        }
+        
+        button {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 1.1em;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 10px;
+            transition: background 0.3s;
+        }
+        
+        button:hover {
+            background: #45a049;
+        }
+        
+        button.stop {
+            background: #f44336;
+        }
+        
+        button.stop:hover {
+            background: #da190b;
+        }
+        
+        .info {
+            margin-top: 20px;
+            font-size: 0.9em;
+            opacity: 0.8;
+            max-width: 400px;
+        }
+        
+        .invisible-mover {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 1px;
+            height: 1px;
+            opacity: 0;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>� Daily Planner 2025</h1>
+        <div id="status" class="status inactive">Status: Inactive</div>
+        <button id="startBtn" onclick="startMovement()">Start Session</button>
+        <button id="stopBtn" onclick="stopMovement()" class="stop" style="display: none;">End Session</button>
+        
+        <div class="method-status" style="margin-top: 20px; text-align: left; background: rgba(0,0,0,0.1); padding: 12px; border-radius: 8px;">
+            <h3 style="margin-top: 0;">Session Status:</h3>
+            <div id="wakelock-status">❓ Focus Timer: Waiting...</div>
+            <div id="events-status">❓ Activity Tracker: Waiting...</div>
+            <div id="animation-status">❓ Display Manager: Waiting...</div>
+            <div id="audio-status">❓ Notification System: Waiting...</div>
+        </div>
+        
+        <div class="info">
+            This planner helps maintain your daily productivity focus. Keep this tab open during your work sessions to track activity and maintain focus time. 
+            <br><br>
+            <strong>Features:</strong> Focus timer, activity tracking, notification management, and display settings.
+        </div>
+    </div>
+    
+    <div id="mover" class="invisible-mover"></div>
+    
+    <script>
+        let isActive = false;
+        let movementInterval;
+        let x = 0;
+        let y = 0;
+        let direction = 1;
+        
+        const statusDiv = document.getElementById('status');
+        const startBtn = document.getElementById('startBtn');
+        const stopBtn = document.getElementById('stopBtn');
+        const mover = document.getElementById('mover');
+        
+        function updateStatus() {
+            if (isActive) {
+                statusDiv.textContent = 'Status: Active - Keeping system awake';
+                statusDiv.className = 'status active';
+            } else {
+                statusDiv.textContent = 'Status: Inactive';
+                statusDiv.className = 'status inactive';
+            }
+        }
+        
+        function simulateActivity() {
+            // Multiple methods to keep the system active
+            
+            // 1. Create mouse movement events
+            const event = new MouseEvent('mousemove', {
+                view: window,
+                bubbles: true,
+                cancelable: true,
+                clientX: Math.random() * window.innerWidth,
+                clientY: Math.random() * window.innerHeight
+            });
+            document.dispatchEvent(event);
+            
+            // 2. Create keyboard events (non-intrusive)
+            const keyEvent = new KeyboardEvent('keydown', {
+                key: 'F15', // F15 key rarely used, won't interfere
+                bubbles: true
+            });
+            document.dispatchEvent(keyEvent);
+            
+            // Update events status
+            document.getElementById('events-status').textContent = '✅ Synthetic Events active';
+            document.getElementById('events-status').style.color = '#4CAF50';
+            
+            // 3. Request animation frame to keep rendering active
+            requestAnimationFrame(() => {
+                // Move an invisible element
+                mover.style.transform = `translate(${Math.sin(Date.now() / 1000)}px, ${Math.cos(Date.now() / 1000)}px)`;
+                
+                // Update animation status on first call
+                if (!window.animationStatusUpdated) {
+                    document.getElementById('animation-status').textContent = '✅ Animation active';
+                    document.getElementById('animation-status').style.color = '#4CAF50';
+                    window.animationStatusUpdated = true;
+                }
+            });
+            
+            // 4. Wake Lock API (if supported)
+            if ('wakeLock' in navigator) {
+                navigator.wakeLock.request('screen')
+                    .then(lock => {
+                        console.log('Wake Lock activated');
+                        window.wakeLockObj = lock;
+                        
+                        // Update status with wake lock confirmation
+                        document.getElementById('wakelock-status').textContent = '✅ Wake Lock active';
+                        document.getElementById('wakelock-status').style.color = '#4CAF50';
+                        
+                        // Handle wake lock release
+                        lock.addEventListener('release', () => {
+                            console.log('Wake Lock released');
+                            document.getElementById('wakelock-status').textContent = '❌ Wake Lock inactive';
+                            document.getElementById('wakelock-status').style.color = '#f44336';
+                            
+                            // Try to reacquire if still active
+                            if (isActive) {
+                                setTimeout(() => {
+                                    console.log('Attempting to reacquire Wake Lock...');
+                                    simulateActivity();
+                                }, 1000);
+                            }
+                        });
+                    })
+                    .catch(err => {
+                        console.log('Wake lock not available:', err.message);
+                        document.getElementById('wakelock-status').textContent = '❌ Wake Lock not supported';
+                        document.getElementById('wakelock-status').style.color = '#f44336';
+                    });
+            } else {
+                console.log('Wake Lock API not supported by this browser');
+                document.getElementById('wakelock-status').textContent = '❌ Wake Lock not supported';
+                document.getElementById('wakelock-status').style.color = '#f44336';
+            }
+            
+            // 5. Keep focus and trigger user activity
+            if (document.hidden === false) {
+                window.focus();
+            }
+            
+            // 6. Play a silent audio to maintain activity
+            if (!window.audioContext) {
+                try {
+                    window.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                    const oscillator = window.audioContext.createOscillator();
+                    const gainNode = window.audioContext.createGain();
+                    gainNode.gain.setValueAtTime(0, window.audioContext.currentTime); // Silent
+                    oscillator.connect(gainNode);
+                    gainNode.connect(window.audioContext.destination);
+                    oscillator.start();
+                    oscillator.stop(window.audioContext.currentTime + 0.01); // Very brief
+                    
+                    // Update audio status
+                    document.getElementById('audio-status').textContent = '✅ Audio Context active';
+                    document.getElementById('audio-status').style.color = '#4CAF50';
+                } catch (e) {
+                    // Audio context not available
+                    console.log('Audio context not available:', e.message);
+                    document.getElementById('audio-status').textContent = '❌ Audio Context not supported';
+                    document.getElementById('audio-status').style.color = '#f44336';
+                }
+            }
+        }
+        
+        function startMovement() {
+            if (!isActive) {
+                isActive = true;
+                
+                // Start with immediate activity
+                simulateActivity();
+                
+                // Continue every 25 seconds to prevent sleep (most systems sleep after 30s-1min)
+                movementInterval = setInterval(simulateActivity, 25000);
+                
+                updateStatus();
+                startBtn.style.display = 'none';
+                stopBtn.style.display = 'inline-block';
+                
+                console.log('Keep-awake activity started - system will stay awake');
+                
+                // Also add a continuous subtle animation to keep the page active
+                startContinuousAnimation();
+            }
+        }
+        
+        function startContinuousAnimation() {
+            function animate() {
+                if (isActive) {
+                    // Subtle animation that keeps the browser engaged
+                    mover.style.transform = `rotate(${Date.now() / 100}deg)`;
+                    requestAnimationFrame(animate);
+                    
+                    // Update animation status
+                    if (!window.animationStatusUpdated) {
+                        document.getElementById('animation-status').textContent = '✅ Animation active';
+                        document.getElementById('animation-status').style.color = '#4CAF50';
+                        window.animationStatusUpdated = true;
+                    }
+                }
+            }
+            animate();
+        }
+        
+        function stopMovement() {
+            if (isActive) {
+                isActive = false;
+                clearInterval(movementInterval);
+                
+                // Release wake lock if it exists
+                if (window.wakeLockObj) {
+                    window.wakeLockObj.release()
+                        .then(() => {
+                            console.log('Wake Lock released');
+                        })
+                        .catch((err) => {
+                            console.error('Error releasing Wake Lock:', err);
+                        });
+                    window.wakeLockObj = null;
+                }
+                
+                // Reset status indicators
+                document.getElementById('wakelock-status').textContent = '❓ Wake Lock: Inactive';
+                document.getElementById('wakelock-status').style.color = '';
+                document.getElementById('events-status').textContent = '❓ Synthetic Events: Inactive';
+                document.getElementById('events-status').style.color = '';
+                document.getElementById('animation-status').textContent = '❓ Animation: Inactive';
+                document.getElementById('animation-status').style.color = '';
+                document.getElementById('audio-status').textContent = '❓ Audio Context: Inactive';
+                document.getElementById('audio-status').style.color = '';
+                window.animationStatusUpdated = false;
+                
+                updateStatus();
+                startBtn.style.display = 'inline-block';
+                stopBtn.style.display = 'none';
+                
+                console.log('Keep-awake activity stopped');
+            }
+        }
+        
+        // Prevent the page from being unloaded accidentally
+        window.addEventListener('beforeunload', function(e) {
+            if (isActive) {
+                e.preventDefault();
+                e.returnValue = 'Are you sure you want to leave? This will stop keeping your system awake.';
+                return e.returnValue;
+            }
+        });
+        
+        // Keep the page active even when hidden
+        document.addEventListener('visibilitychange', function() {
+            if (document.hidden && isActive) {
+                console.log('Page is hidden but keeping system awake');
+            }
+        });
+        
+        // Initialize
+        updateStatus();
+    </script>
+</body>
+</html>
