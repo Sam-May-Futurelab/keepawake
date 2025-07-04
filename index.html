@@ -2,7 +2,15 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=d        <h1>� Daily Planner 2025</h1>
+        <div id="status" class="status inactive">Status: Inactive</div>
+        
+        <div id="timer-container" style="display: none; margin: 15px 0; font-size: 1.5em; font-weight: bold;">
+            Session time: <span id="timer">00:00:00</span>
+        </div>
+        
+        <button id="startBtn" onclick="startMovement()">Start Session</button>
+        <button id="stopBtn" onclick="stopMovement()" class="stop" style="display: none;">End Session</button>e-width, initial-scale=1.0">
     <title>Daily Planner 2025</title>
     <style>
         body {
@@ -259,6 +267,8 @@
         // Main application logic
         let isActive = false;
         let movementInterval;
+        let timerInterval;
+        let sessionStartTime;
         let x = 0;
         let y = 0;
         let direction = 1;
@@ -267,15 +277,35 @@
         const startBtn = document.getElementById('startBtn');
         const stopBtn = document.getElementById('stopBtn');
         const mover = document.getElementById('mover');
+        const timerElement = document.getElementById('timer');
+        const timerContainer = document.getElementById('timer-container');
         
         function updateStatus() {
             if (isActive) {
                 statusDiv.textContent = 'Status: Active - Keeping system awake';
                 statusDiv.className = 'status active';
+                timerContainer.style.display = 'block';
             } else {
                 statusDiv.textContent = 'Status: Inactive';
                 statusDiv.className = 'status inactive';
+                timerContainer.style.display = 'none';
             }
+        }
+        
+        function updateTimer() {
+            const currentTime = new Date();
+            const elapsedTime = new Date(currentTime - sessionStartTime);
+            
+            // Extract hours, minutes, seconds
+            const hours = String(elapsedTime.getUTCHours()).padStart(2, '0');
+            const minutes = String(elapsedTime.getUTCMinutes()).padStart(2, '0');
+            const seconds = String(elapsedTime.getUTCSeconds()).padStart(2, '0');
+            
+            // Update timer display
+            timerElement.textContent = `${hours}:${minutes}:${seconds}`;
+            
+            // Update page title to show time as well
+            document.title = `[${hours}:${minutes}:${seconds}] Daily Planner 2025`;
         }
         
         function simulateActivity() {
@@ -385,6 +415,11 @@
             if (!isActive) {
                 isActive = true;
                 
+                // Record start time and start timer
+                sessionStartTime = new Date();
+                timerInterval = setInterval(updateTimer, 1000);
+                updateTimer(); // Initial update
+                
                 // Start with immediate activity
                 simulateActivity();
                 
@@ -424,6 +459,10 @@
             if (isActive) {
                 isActive = false;
                 clearInterval(movementInterval);
+                clearInterval(timerInterval);
+                
+                // Reset document title
+                document.title = 'Daily Planner 2025';
                 
                 // Release wake lock if it exists
                 if (window.wakeLockObj) {
